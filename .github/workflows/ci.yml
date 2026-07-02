@@ -43,7 +43,7 @@ jobs:
           node-version: "22"
       - run: npx --yes web-ext lint --source-dir clients/browser-extension
       - run: bash clients/browser-extension/tests/validate_structure.sh
-      - run: node --test clients/browser-extension/tests/
+      - run: node --test clients/browser-extension/tests/*.test.mjs
 
   zig:
     name: GRV6 reference (zig build test)

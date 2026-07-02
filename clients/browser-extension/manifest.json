@@ -1,0 +1,76 @@
+{
+  "manifest_version": 2,
+  "name": "Groove Discovery",
+  "version": "0.2.0",
+  "description": "Localhost Groove service discovery. Probes registry-known ports for groove-aware services and bridges their capabilities into the browser (SPEC v0.2, JSON manifest dialect).",
+  "author": "Jonathan D.A. Jewell",
+  "homepage_url": "https://github.com/hyperpolymath/groove-protocol",
+  "icons": {
+    "48": "icons/groove-48.png",
+    "96": "icons/groove-96.png"
+  },
+  "permissions": [
+    "storage",
+    "http://[::1]:6465/*",
+    "http://127.0.0.1:6465/*",
+    "http://localhost:6465/*",
+    "http://[::1]:6470/*",
+    "http://127.0.0.1:6470/*",
+    "http://localhost:6470/*",
+    "http://[::1]:6473/*",
+    "http://127.0.0.1:6473/*",
+    "http://localhost:6473/*",
+    "http://[::1]:6475/*",
+    "http://127.0.0.1:6475/*",
+    "http://localhost:6475/*",
+    "http://[::1]:6480/*",
+    "http://127.0.0.1:6480/*",
+    "http://localhost:6480/*",
+    "http://[::1]:7600/*",
+    "http://127.0.0.1:7600/*",
+    "http://localhost:7600/*",
+    "http://[::1]:7700/*",
+    "http://127.0.0.1:7700/*",
+    "http://localhost:7700/*",
+    "http://[::1]:7800/*",
+    "http://127.0.0.1:7800/*",
+    "http://localhost:7800/*",
+    "http://[::1]:8000/*",
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*",
+    "http://[::1]:9000/*",
+    "http://127.0.0.1:9000/*",
+    "http://localhost:9000/*",
+    "http://[::1]:9090/*",
+    "http://127.0.0.1:9090/*",
+    "http://localhost:9090/*",
+    "http://[::1]:9100/*",
+    "http://127.0.0.1:9100/*",
+    "http://localhost:9100/*"
+  ],
+  "background": {
+    "scripts": [
+      "background/groove-targets.gen.js",
+      "background/groove-client.vendor.js",
+      "background/groove-discovery.js"
+    ]
+  },
+  "browser_action": {
+    "default_icon": "icons/groove-48.png",
+    "default_popup": "popup/popup.html",
+    "default_title": "Groove Discovery"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/groove-bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "groove-harness@hyperpolymath.com",
+      "strict_min_version": "109.0"
+    }
+  }
+}
