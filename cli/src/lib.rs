@@ -11,4 +11,5 @@ pub mod detect;
 pub mod init;
 pub mod probe;
 pub mod registry;
+pub mod timefmt;
 pub mod validate;

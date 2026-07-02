@@ -71,8 +71,18 @@ pub fn run(path: &str, json_output: bool) -> Result<()> {
 
     let manifest_file = manifest_path.to_string_lossy().to_string();
 
+    findings.extend(validate_manifest_content(&content, &manifest_file));
+    output_findings(&findings, json_output)
+}
+
+/// Validate manifest content (checks 1–7). Pure — returns findings instead of
+/// printing, so tests and the reference provider can reuse it.
+pub fn validate_manifest_content(content: &str, manifest_file: &str) -> Vec<Finding> {
+    let mut findings: Vec<Finding> = Vec::new();
+    let manifest_file = manifest_file.to_string();
+
     // Check 1: Valid JSON
-    let manifest: serde_json::Value = match serde_json::from_str(&content) {
+    let manifest: serde_json::Value = match serde_json::from_str(content) {
         Ok(v) => v,
         Err(e) => {
             findings.push(Finding {
@@ -82,7 +92,7 @@ pub fn run(path: &str, json_output: bool) -> Result<()> {
                 description: format!("Invalid JSON: {}", e),
                 check: "DOG-03".into(),
             });
-            return output_findings(&findings, json_output);
+            return findings;
         }
     };
 
@@ -298,7 +308,7 @@ pub fn run(path: &str, json_output: bool) -> Result<()> {
         });
     }
 
-    output_findings(&findings, json_output)
+    findings
 }
 
 /// Output findings as human-readable or JSON.
@@ -357,9 +367,14 @@ fn output_findings(findings: &[Finding], json_output: bool) -> Result<()> {
     Ok(())
 }
 
-/// Extract port number from a URL like "http://localhost:8080/api".
+/// Extract port number from a URL like "http://localhost:8080/api" or
+/// "http://[::1]:6465/path" (bracketed IPv6 hosts: the port comes after `]`,
+/// and colons inside the brackets are address bytes, not a port).
 fn extract_port_from_url(url: &str) -> Option<u16> {
-    let re = regex::Regex::new(r":(\d+)").ok()?;
-    re.captures(url)
-        .and_then(|c| c[1].parse::<u16>().ok())
+    let re = if url.contains('[') {
+        regex::Regex::new(r"\]:(\d+)").ok()?
+    } else {
+        regex::Regex::new(r":(\d+)").ok()?
+    };
+    re.captures(url).and_then(|c| c[1].parse::<u16>().ok())
 }

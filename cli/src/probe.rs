@@ -315,12 +315,13 @@ pub async fn mesh(json: &bool) -> Result<()> {
 /// Returns Ok(Some(json)) if the probe succeeds and returns valid JSON,
 /// Ok(None) if the port is open but no Groove manifest,
 /// Err if the connection fails.
-async fn probe_groove(addr: &str, probe_timeout: Duration) -> Result<Option<String>> {
+pub async fn probe_groove(addr: &str, probe_timeout: Duration) -> Result<Option<String>> {
     let stream = timeout(probe_timeout, TcpStream::connect(addr)).await??;
 
-    // Send a minimal HTTP/1.0 GET request
+    // Send a minimal HTTP/1.0 GET request. JSON is the required encoding
+    // (SPEC 2.1.2); a2ml is advertised at lower preference per ADR 0002.
     let request = format!(
-        "GET /.well-known/groove HTTP/1.0\r\nHost: localhost\r\nAccept: application/json\r\n\r\n"
+        "GET /.well-known/groove HTTP/1.0\r\nHost: localhost\r\nAccept: application/groove+json, application/groove+a2ml;q=0.5, application/json;q=0.2\r\n\r\n"
     );
 
     let mut stream = stream;
@@ -349,5 +350,5 @@ async fn probe_groove(addr: &str, probe_timeout: Duration) -> Result<Option<Stri
 
 /// Simple timestamp without pulling in chrono.
 fn chrono_now() -> String {
-    "2026-04-04T00:00:00Z".to_string() // TODO: use actual time
+    crate::timefmt::rfc3339_now()
 }

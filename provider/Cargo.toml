@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+
+[package]
+name = "groove-provider"
+version = "0.2.0"
+edition = "2024"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+description = "Reference Groove provider — discovery, lifecycle, attestation; the conformance target"
+license = "MPL-2.0"
+repository = "https://github.com/hyperpolymath/groove-protocol"
+
+[dependencies]
+groove = { path = "../cli" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["net", "rt-multi-thread", "macros", "time", "io-util", "sync", "signal"] }
