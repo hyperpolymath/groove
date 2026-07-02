@@ -3,12 +3,12 @@
 
 [package]
 name = "groove"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
 description = "CLI tool for the Groove service discovery protocol — init, validate, probe, mesh"
-license = "AGPL-3.0-or-later"
-repository = "https://github.com/hyperpolymath/standards"
+license = "MPL-2.0"
+repository = "https://github.com/hyperpolymath/groove-protocol"
 
 [dependencies]
 anyhow = "1"

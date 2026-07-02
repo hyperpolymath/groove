@@ -32,7 +32,7 @@ pub async fn run(host: &str, extra_ports: Option<&str>, timeout_ms: u64) -> Resu
     let probe_timeout = Duration::from_millis(timeout_ms);
 
     // Build port list from registry + extra ports
-    let mut ports: Vec<u16> = registry::REGISTRY.iter().map(|e| e.port).collect();
+    let mut ports: Vec<u16> = registry::probe_ports();
     ports.sort();
     ports.dedup();
 
@@ -172,7 +172,7 @@ pub async fn run(host: &str, extra_ports: Option<&str>, timeout_ms: u64) -> Resu
 /// Show the live Groove mesh topology.
 pub async fn mesh(json: &bool) -> Result<()> {
     let probe_timeout = Duration::from_millis(500);
-    let ports: Vec<u16> = registry::REGISTRY.iter().map(|e| e.port).collect();
+    let ports: Vec<u16> = registry::probe_ports();
 
     let mut services: Vec<DiscoveredService> = Vec::new();
 

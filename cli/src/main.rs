@@ -16,11 +16,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-mod detect;
-mod init;
-mod probe;
-mod registry;
-mod validate;
+use groove::{init, probe, registry, validate};
 
 /// groove — Groove protocol service discovery tooling
 #[derive(Parser)]
