@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0005: Browser extension moves into this repo; stays Firefox MV2 for now
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+The extension lived alone in `groove-browser-harness` under ~40 files of unrelated
+boilerplate, spoke a nonconformant ad-hoc dialect (invented `/message`+`/recv`
+endpoints, IPv4-only probing), carried three mutually contradictory port tables, and
+its MV2 manifest used the MV3-only `host_permissions` key — meaning Firefox granted
+it no host permissions at all. It duplicated logic that exists in
+`harness/groove-harness.js`.
+
+== Decision
+
+* The extension moves to `clients/browser-extension/` in this repo, sharing pure
+  logic with the harness via `clients/js/groove-client.js`, tested in the same CI
+  against the reference provider.
+* It stays *Manifest V2, Firefox-only* for now: MV3 background service workers are
+  killed on idle, which is hostile to a persistent heartbeat/probe loop. MV3 (and
+  Chrome support) is a tracked follow-up, not part of this milestone.
+* `groove-browser-harness` is reduced to a pointer README.
+
+== Owner console action
+
+Archive `hyperpolymath/groove-browser-harness` on GitHub after merging its pointer PR.
+
+== Consequences
+
+4 repos → 2. One port table (generated from the registry, ADR 0006). The extension
+becomes conformance-testable.

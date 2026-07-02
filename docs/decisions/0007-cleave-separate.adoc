@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0007: cleave remains a separate repo
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+cleave (the interface-engine design: transmutable dial, ranked ownership,
+well-founded teardown, "integration-degree = security posture") is referenced by the
+LAYERING annex but has zero implementation — it is a design corpus with an honest
+truth-ledger (`docs/PROOF-NEEDS.adoc`).
+
+== Decision
+
+cleave stays its own repo: it is a distinct artifact (a library design, not a
+protocol), has real standalone value, and merging an unimplemented design into the
+protocol repo would re-create the conflation this consolidation removes. It gets the
+same de-templating pass, an honest README, and a `docs/KERNEL.adoc` defining its
+minimal demonstrable kernel (its own stated bar). cleave work does *not* block any
+protocol milestone.
+
+== Consequences
+
+Groove v0.x is normatively independent of cleave (ADR 0002/0003); the LAYERING annex
+is the only coupling point, and it is explicitly aspirational.

@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0006: One machine-readable port/service registry
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+Port assignments existed in at least four places (cli `registry.rs`, extension
+code, extension README/quickstarts, spec prose) with three mutually contradictory
+tables. `registry.rs` itself noted a gitbot-fleet/verisimdb collision on 8080.
+Port 7500 had a host permission in the extension but was never probed. The interim
+`groove` repo proposed broker port 4070, unconfirmed.
+
+== Decision
+
+`registry/groove-registry.json` is the single source of truth for ports, services,
+and capability/protocol types. Everything else derives from it:
+
+* `cli` embeds it at compile time (`include_str!` + serde).
+* The extension's port table and host-permission list are *generated*
+  (`clients/browser-extension/scripts/gen-targets.mjs`); CI fails on drift.
+* A consistency test asserts spec prose port literals ∈ registry ∪ probe bands.
+
+Resolutions: gitbot-fleet 8080 → *9100* (collision removed); *7500 dropped*;
+*4070 recorded as `rejected-proposal`* for provenance; new `groove-ref`
+reference provider registered on *6470* (inside the 6460–6500 probe band).
+
+== Consequences
+
+The contradictory-port-table bug class is dead: a wrong table can no longer be
+hand-edited into existence. Out-of-scope repos that believed old assignments must
+reconcile against the registry file (explicitly out of scope here; entries carry
+status/notes for that purpose).

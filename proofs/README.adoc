@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= Groove protocol proofs (relocated from gossamer — NOT YET DECOUPLED)
+:toc: macro
+
+[abstract]
+Three Idris2 proof modules moved *wholesale* out of `hyperpolymath/gossamer` on
+2026-06-16 (via the interim `groove` repo, consolidated here 2026-07-02 per ADR
+0001). This is a *provenance archive*, not yet wired. **Nothing in this
+directory is verified in this repo — do not describe these proofs as "done" or
+"verified" anywhere.**
+
+toc::[]
+
+== What is here
+
+[cols="1,3",options="header"]
+|===
+| Module | What it proves (over the gossamer-era ABI)
+| `GrooveTermination.idr` | The Groove connect-handshake terminates in bounded length (≤4 steps); no privilege escalation; determinism.
+| `IPCDispatch.idr` | IPC command dispatch + protocol-conformance (`ConformsTo`) machinery for the groove command surface.
+| `CapabilityAuthenticity.idr` | Declared capabilities match their implementations (manifest authenticity; no phantom capabilities; attenuation/revocation).
+|===
+
+== Status — MOVED WHOLESALE, NOT YET DECOUPLED (read this)
+
+These were relocated *as-is*. They are **not** compilable in this repo:
+
+* They still declare `module Gossamer.ABI.*` and `import Gossamer.ABI.{Types, Groove}`.
+* There is no ipkg / no `Types.idr` / `Groove.idr` here, so they will not typecheck
+  standing alone.
+* No CI verifies them: idris2 is not part of the default toolchain. The allow-fail
+  `proofs.yml` workflow attempts a typecheck; until it is green these files are text,
+  not proofs.
+
+== PROOFS-1 — the decoupling task (open)
+
+The "properly done" re-homing, tracked as *PROOFS-1*:
+
+. Rename modules `Gossamer.ABI.*` → `Groove.*`.
+. Port or supply their dependencies (`Types.idr`, `Groove.idr` equivalents) against
+  the v0.2 manifest data model in `SPEC.adoc`, not the gossamer ABI.
+. Add a `groove-proofs.ipkg` that builds them here.
+. Flip `proofs.yml` from allow-fail to required once green.
+
+Do the rename only under the CI job that can check it — a textual rename with no
+typechecker is churn, not progress.
+
+== What stayed behind (context)
+
+The **cleave-obligation** proofs `HandleLinearity.idr` (linear handles) and
+`ResourceCleanup.idr` (teardown / residue) stayed in gossamer: they are generic
+(they prove over `WebviewHandle`/`Channel`/`Cap`, not just groove) but still
+`import Gossamer.ABI.Groove`. Their decoupling belongs to the cleave repo's
+PROOF-NEEDS ledger, not here. The groove *native* surface (`groove.zig`,
+`gossamer_groove_*` exports, `schema/groove-manifest.schema.json`) also remains in
+gossamer, blocked on a green native build there.
+
+== Provenance
+
+* Source: `hyperpolymath/gossamer`, branch `restore/honest-abi-decouple-groove`,
+  baseline tag `pre-honest-abi-2026-06-16`.
+* After removal, gossamer's `gossamer-abi.ipkg` (10 modules) typechecks clean.
+* Per estate policy these are *relocated, never deleted* (cold foundational work is
+  not disposable). Do not prune.
