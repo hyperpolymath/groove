@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: MPL-2.0
+# Groove protocol CI — small real matrix (ADR 0008): every job exercises an
+# actual artifact. The registry file is the single source of truth (ADR 0006);
+# drift anywhere fails the build.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: build + test (workspace incl. conformance suite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --workspace
+      - run: cargo test --workspace
+
+  registry-drift:
+    name: generated port tables match registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node clients/browser-extension/scripts/gen-targets.mjs --check
+
+  webext:
+    name: browser extension lint + structure + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npx --yes web-ext lint --source-dir clients/browser-extension
+      - run: bash clients/browser-extension/tests/validate_structure.sh
+      - run: node --test clients/browser-extension/tests/
+
+  zig:
+    name: GRV6 reference (zig build test)
+    runs-on: ubuntu-latest
+    # Allow-fail until first green (zig is unverifiable in the dev environment);
+    # promote to required once this job passes, then it gates all grv6 changes.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+      - run: zig build test
+        working-directory: reference/ipv6t
+
+  spec-consistency:
+    name: spec/conformance/version coherence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: every CONF ID in CONFORMANCE.adoc has a matching test
+        run: |
+          set -euo pipefail
+          missing=0
+          for id in $(grep -oE 'CONF-L[0-9]-[0-9]{2}' spec/CONFORMANCE.adoc | sort -u); do
+            fn=$(echo "$id" | tr 'A-Z-' 'a-z_')
+            if ! grep -rq "fn ${fn}" provider/tests/; then
+              echo "MISSING TEST for ${id} (expected fn ${fn} in provider/tests/)"
+              missing=1
+            fi
+          done
+          exit $missing
+      - name: version string coherent across Cargo.toml / SPEC / README
+        run: |
+          set -euo pipefail
+          v=$(grep -m1 '^version' cli/Cargo.toml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "cli version: $v"
+          grep -q "$v" spec/SPEC.adoc || { echo "SPEC.adoc does not mention $v"; exit 1; }
+          grep -q "$v" README.adoc || { echo "README.adoc does not mention $v"; exit 1; }
+      - name: no stray license references outside LICENSES/ and ADRs
+        run: |
+          set -euo pipefail
+          if grep -rn "PMPL\|AGPL-3" --include='*.adoc' --include='*.md' --include='*.toml' . \
+            | grep -v '^./LICENSES/' | grep -v 'docs/decisions/0004' | grep -v 'docs/archive/'; then
+            echo "stray PMPL/AGPL reference found (see above)"; exit 1
+          fi
