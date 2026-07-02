@@ -35,7 +35,7 @@ conformance suite, and a reference provider. Decision records in
   gitbot-fleet 8080 → 9100 (collision removed); 7500 dropped; 4070 recorded
   as rejected-proposal; reference provider registered at 6465.
 - Licensing normalized (ADR 0004): MPL-2.0 code, CC-BY-SA-4.0 prose; stale
-  AGPL/PMPL declarations removed.
+  license declarations removed.
 - `README.adoc` and `READINESS.md` rewritten to describe the repository as it
   is, not as aspired.
 
