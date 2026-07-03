@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
 = Groove Protocol Specification
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-v0.1.0, 2026-03-23
+v0.2.0-draft, 2026-07-02
 :toc: left
 :toclevels: 4
 :icons: font
@@ -24,6 +24,11 @@ and bridge adaptation for legacy systems.
 == Status of This Document
 
 Working Draft. Not yet submitted for standardisation.
+
+This is revision 0.2.0-draft (2026-07-02), superseding 0.1.0 (2026-03-23).
+It adds the manifest encoding model (§2.1.1–§2.1.4, per ADR 0002), aligns the
+JSON field set with the reference implementation, and corrects implementation-
+status claims. The version line follows ADR 0003.
 
 == Conventions
 
@@ -48,8 +53,9 @@ interoperate. Current integration approaches fall into three categories:
 
 Groove is a fourth approach: **structural composition**. Systems declare what
 they offer and what they consume. If the shapes fit, they compose. If not, both
-keep working independently. Compatibility is a compile-time property enforced
-by dependent types.
+keep working independently. Compatibility is a structural property of the
+manifests, checked at handshake; the design goal (§3.3, aspirational) is to
+enforce it at compile time with dependent types.
 
 === 1.2. Design Principles
 
@@ -101,6 +107,84 @@ Content-Type: application/groove+a2ml
   @heartbeat(interval-ms=5000, timeout-ms=15000)
 @end
 ----
+
+NOTE: The example above shows the optional A2ML encoding. The REQUIRED
+encoding is JSON (§2.1.2); the encodings and negotiation rules are defined in
+§2.1.1–§2.1.4 (ADR 0002).
+
+==== 2.1.1. Manifest data model
+
+The Groove Manifest is defined as an abstract data model, independent of
+encoding:
+
+[cols="1,1,3",options="header"]
+|===
+| Field | Presence | Meaning
+| `groove_version` | REQUIRED | Protocol major version; the literal string `"1"` for this specification
+| `service_id` | REQUIRED | Stable service identifier matching `^[a-z][a-z0-9_-]*$`
+| `service_version` | RECOMMENDED | Semantic version of the service
+| `mode` | OPTIONAL | `"active"` (HTTP server, default) or `"passive"` (CLI/library)
+| `capabilities` | REQUIRED | Map of capability key → capability record. Each record carries a REQUIRED `type` (a registered capability type, see `registry/groove-registry.json`) and MAY carry `protocol` (a registered protocol type), `version`, and interface metadata
+| `consumes` | OPTIONAL | List of capability types this service consumes when available
+| `endpoints` | OPTIONAL | Map of endpoint name → URL; URL ports MUST agree with the service's registry assignment
+| `heartbeat` | OPTIONAL | Interval/timeout hints per §4.3
+|===
+
+A manifest with zero capabilities is valid but SHOULD be flagged by tooling:
+a service that offers nothing has no reason to speak Groove.
+
+==== 2.1.2. JSON encoding — `application/groove+json` (REQUIRED)
+
+Every groove-aware system MUST be able to serve, and every consumer MUST be
+able to parse, the JSON encoding. `capabilities` is a JSON **object** (map),
+not an array.
+
+[source,json]
+----
+{
+  "groove_version": "1",
+  "service_id": "groove-ref",
+  "service_version": "0.2.0",
+  "mode": "active",
+  "capabilities": {
+    "attest": { "type": "attestation", "protocol": "http", "version": "1.0.0" }
+  },
+  "consumes": [],
+  "endpoints": { "groove": "http://[::1]:6465/.well-known/groove" }
+}
+----
+
+Consumers requesting with `Accept: application/json` MUST be served the JSON
+encoding with `Content-Type: application/groove+json` (or `application/json`
+for legacy providers).
+
+==== 2.1.3. A2ML encoding — `application/groove+a2ml` (OPTIONAL)
+
+The A2ML `@groove-manifest` encoding (illustrated in §2.1) is the richer
+target encoding. Providers MAY serve it when the request's `Accept` header
+prefers `application/groove+a2ml`; it is currently *serve-only*: no
+conforming A2ML parser exists in the reference implementations, so consumers
+MUST NOT require it (ADR 0002). When both encodings are served they MUST
+describe the same manifest.
+
+Content negotiation: providers SHOULD honour `Accept`; on an absent, unknown,
+or wildcard `Accept`, providers MUST default to the JSON encoding
+(bare-by-default: a consumer that knows nothing still gets a manifest it can
+parse).
+
+==== 2.1.4. Deployment conventions and probe set
+
+Two deployment forms exist:
+
+. **Live endpoint** — `GET /.well-known/groove` served by the running
+  service (normative form; all lifecycle endpoints in §4 hang off this path).
+. **Static file** — `.well-known/groove/manifest.json` committed in a
+  repository or served by a static host; this is what `groove init`
+  generates and `groove validate` checks. It carries the JSON encoding.
+
+The probe set for local discovery (§2.2) is: the port assignments in
+`registry/groove-registry.json` (excluding `rejected-proposal` entries)
+∪ user-configured extra ports ∪ the default probe band 6460–6500.
 
 === 2.2. Local Discovery (Port Probing)
 
@@ -170,10 +254,16 @@ Consumers declare version constraints using the following syntax:
 | `*` | Any version
 |===
 
-=== 3.3. Idris2 Type-Level Guarantees
+=== 3.3. Idris2 Type-Level Guarantees (aspirational)
+
+NOTE: *Status (2026-07-02):* the Idris2 modules in `proofs/` are relocated
+from gossamer and do not yet typecheck in this repository (task PROOFS-1;
+see `proofs/README.adoc`). This section specifies the *intended* type-level
+guarantees; no implementation currently delivers them. Conforming
+implementations achieve the same properties via runtime validation (§3.4).
 
 The canonical representation of groove interfaces is in Idris2 with dependent
-types. This provides four compile-time guarantees:
+types. When realised, this provides four compile-time guarantees:
 
 . **Match safety** — if the types don't structurally match, the code that
   connects them cannot be written. This is not a runtime check.

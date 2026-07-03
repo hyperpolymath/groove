@@ -1,0 +1,45 @@
+; ARCHIVED 2026-07-02 (ADR 0002): historical S-expression dialect of the Groove
+; capability manifest, from the interim `groove` repo. Superseded by the normative
+; encodings in spec/SPEC.adoc (application/groove+json required, application/groove+a2ml
+; @-block dialect optional). Retained for provenance; do not implement against this.
+; SPDX-License-Identifier: MPL-2.0
+; Groove Protocol Manifest — declares API surfaces this project exposes.
+;
+; groove IS the protocol. It depends on cleave (interface engine) and weft
+; (data-form / wire layer). This manifest is also the reference shape of the
+; capability manifest groove serves at /.well-known/groove for consumers.
+;
+; See: docs/standards/GROOVE-PROTOCOL.adoc
+
+(groove-manifest
+  (version "1.0")
+
+  (service "groove")
+  (service-version "0.1.0")
+
+  ; Broker / reference-discovery port. PROPOSED 4070 (next in the 40xx service
+  ; block: stapeln 4010 .. reposystem 4060). CONFIRM in standards/PORT-REGISTRY.md
+  ; before use — manual, owner-only.
+  (port 4070)
+
+  (api-surfaces
+    (rest    (enabled true)  (path "/api/v1"))
+    (grpc    (enabled false) (port-offset 1))
+    (graphql (enabled false) (path "/graphql"))
+    (websocket (enabled false) (path "/ws"))
+    (sse     (enabled false) (path "/events"))
+    (groove  (enabled true)  (path "/.well-known/groove")))
+
+  (health "/health")
+
+  ; Capabilities — what groove offers consumers.
+  (capabilities
+    (cap (id "groove.discover")   (name "Capability discovery")    (desc "GET /.well-known/groove returns a typed, signable capability manifest."))
+    (cap (id "groove.negotiate")  (name "Typed negotiation")       (desc "Typed capability negotiation between components; admissibility = offered superset-of required."))
+    (cap (id "groove.soft")       (name "Soft Groove")             (desc "Light / pub-sub / drop-in; session-scoped; Soft-expiring lease. Maps to a sparse order-respecting subset on the cleave dial."))
+    (cap (id "groove.hard")       (name "Hard Groove")             (desc "Heavy / in-process / docked; Hard-refreshing lease. Maps to deep descent (near perp) on the cleave dial.")))
+
+  ; Dependencies — what groove needs from others.
+  (dependencies
+    (dep (service "cleave") (version ">=0.1.0") (why "interface engine: dial, staircase, linear handles, self-dual teardown"))
+    (dep (service "weft")   (version ">=0.1.0") (why "data-form / wire layer: Bebop control plane + WebRTC media plane"))))

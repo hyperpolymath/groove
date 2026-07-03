@@ -56,7 +56,12 @@ TCP payload, not in protocol headers.
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ----
 
-**Total header size: 105 bytes.**
+**Total header size: 108 bytes** (4 + 1 + 1 + 2 + 32 + 32 + 32 + 4, per the
+field table below; the previous "105" was a miscount).
+
+// Layout is normative-as-implemented: reference/ipv6t/src/grv6.zig
+// (HEADER_SIZE = 108, with tests). Changes to the frame layout must go
+// through the CI zig job.
 
 === 1.2. Field Definitions
 

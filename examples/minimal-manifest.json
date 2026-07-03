@@ -1,0 +1,17 @@
+{
+  "groove_version": "1",
+  "service_id": "groove-ref",
+  "service_version": "0.2.0",
+  "mode": "active",
+  "capabilities": {
+    "attestation": {
+      "type": "attestation",
+      "protocol": "http",
+      "version": "1.0.0"
+    }
+  },
+  "consumes": [],
+  "endpoints": {
+    "groove": "http://[::1]:6465/.well-known/groove"
+  }
+}

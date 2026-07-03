@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0004: Licensing — MPL-2.0 for code, CC-BY-SA-4.0 for spec/docs prose
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+Four license signals coexisted: `LICENSE` = MPL-2.0; `LICENSES/` = MPL-2.0 +
+CC-BY-SA-4.0; `README.adoc` footer = "PMPL-1.0-or-later"; `cli/Cargo.toml` =
+"AGPL-3.0-or-later". The PMPL and AGPL values are stale leftovers from an earlier
+normalisation pass.
+
+== Decision
+
+* Code (Rust, Zig, JS, Idris): *MPL-2.0*.
+* Specification and documentation prose: *CC-BY-SA-4.0*.
+* `cli/Cargo.toml` → `license = "MPL-2.0"`, repository URL corrected to this repo.
+* README footer states the split explicitly. No PMPL/AGPL references remain outside
+  `LICENSES/` texts.
+
+== Consequences
+
+`grep -rn "PMPL\|AGPL-3"` outside `LICENSES/` must return nothing; checked in the
+spec-consistency CI job.

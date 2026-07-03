@@ -1,204 +1,143 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //
-// Canonical Groove registry — the single source of truth for port assignments,
-// capability types, and service metadata. All other port tables (Groove.idr,
-// groove.zig, groove-discovery.js) are derived from this.
-//
-// Reconciled from the 2026-04-04 estate-wide dogfooding audit which found
-// 3 conflicting port tables with 4 disagreements.
+// Canonical Groove registry, loaded at compile time from
+// registry/groove-registry.json — THE single source of truth for port
+// assignments, capability types, and service metadata (ADR 0006).
+// All other port tables (browser extension targets, spec prose) are
+// generated from or validated against that file, never hand-copied.
 
-use anyhow::{bail, Result};
+use std::sync::LazyLock;
+
+use anyhow::{bail, Context, Result};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
+/// The embedded registry file. Kept public so tests and tooling can assert
+/// against the exact bytes the binary was built with.
+pub const REGISTRY_JSON: &str = include_str!("../../registry/groove-registry.json");
+
 /// A registered Groove service with canonical port and capabilities.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceEntry {
-    pub id: &'static str,
+    pub id: String,
     pub port: u16,
-    pub offers: &'static [&'static str],
-    pub consumes: &'static [&'static str],
-    pub description: &'static str,
+    pub offers: Vec<String>,
+    pub consumes: Vec<String>,
+    pub description: String,
+    #[serde(default = "default_status")]
+    pub status: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
+}
+
+fn default_status() -> String {
+    "active".to_string()
+}
+
+impl ServiceEntry {
+    /// Entries that represent live, probeable assignments.
+    pub fn is_probeable(&self) -> bool {
+        self.status != "rejected-proposal"
+    }
+}
+
+/// The parsed shape of registry/groove-registry.json.
+#[derive(Debug, Deserialize)]
+pub struct RegistryFile {
+    pub registry_version: u32,
+    pub probe_bands: Vec<(u16, u16)>,
+    pub services: Vec<ServiceEntry>,
+    pub capability_types: Vec<String>,
+    pub protocol_types: Vec<String>,
+}
+
+static REGISTRY_FILE: LazyLock<RegistryFile> = LazyLock::new(|| {
+    parse_registry(REGISTRY_JSON)
+        .expect("embedded registry/groove-registry.json must parse — fix the file, not the code")
+});
+
+/// Parse a registry document. Public so tests can round-trip candidate edits.
+pub fn parse_registry(json: &str) -> Result<RegistryFile> {
+    let reg: RegistryFile =
+        serde_json::from_str(json).context("registry JSON does not match the expected schema")?;
+    if reg.registry_version != 1 {
+        bail!("unsupported registry_version {}", reg.registry_version);
+    }
+    Ok(reg)
 }
 
 /// The canonical Groove service registry.
 ///
-/// Port assignments are authoritative. If any other file (Groove.idr, groove.zig,
-/// groove-discovery.js) disagrees, it is that file which is wrong.
-pub const REGISTRY: &[ServiceEntry] = &[
-    ServiceEntry {
-        id: "burble",
-        port: 6473,
-        offers: &[
-            "voice",
-            "text",
-            "presence",
-            "spatial-audio",
-            "recording",
-            "tts",
-            "stt",
-        ],
-        consumes: &["integrity", "octad-storage", "scanning"],
-        description: "P2P voice + AI bridge — real-time communications platform",
-    },
-    ServiceEntry {
-        id: "vext",
-        port: 6480,
-        offers: &[
-            "integrity",
-            "feed-verification",
-            "hash-chain",
-            "attestation",
-        ],
-        consumes: &["voice", "text", "octad-storage"],
-        description: "Verification triad member — cryptographic integrity proofs",
-    },
-    ServiceEntry {
-        id: "panic-attack",
-        port: 7600,
-        offers: &["static-analysis"],
-        consumes: &["octad-storage", "workflow"],
-        description: "47-language static analysis and security scanning",
-    },
-    ServiceEntry {
-        id: "conflow",
-        port: 7700,
-        offers: &["config-orchestration"],
-        consumes: &["octad-storage"],
-        description: "CUE + Nickel + K9 config validation orchestrator",
-    },
-    ServiceEntry {
-        id: "rpa-elysium",
-        port: 7800,
-        offers: &["workflow"],
-        consumes: &["voice", "text", "octad-storage", "scanning"],
-        description: "Robotic process automation toolkit",
-    },
-    ServiceEntry {
-        id: "panll",
-        port: 8000,
-        offers: &["panel-ui"],
-        consumes: &[
-            "voice",
-            "text",
-            "presence",
-            "integrity",
-            "octad-storage",
-            "scanning",
-        ],
-        description: "Cognitive-relief development panel system (108 panels)",
-    },
-    ServiceEntry {
-        id: "verisimdb",
-        port: 8080,
-        offers: &["octad-storage", "drift-detection", "temporal-versioning"],
-        consumes: &["scanning"],
-        description: "Cross-system data consistency via 8-modality octad model",
-    },
-    ServiceEntry {
-        id: "gitbot-fleet",
-        port: 8080, // NOTE: port collision with VeriSimDB — needs resolution
-        offers: &["bot-orchestration"],
-        consumes: &["scanning", "workflow", "octad-storage"],
-        description: "Bot fleet for automated repo quality enforcement (6 bots)",
-    },
-    ServiceEntry {
-        id: "echidna",
-        port: 9000,
-        offers: &["theorem-proving"],
-        consumes: &["octad-storage", "scanning"],
-        description: "Neurosymbolic theorem-proving platform (30 provers)",
-    },
-    ServiceEntry {
-        id: "hypatia",
-        port: 9090,
-        offers: &["scanning", "static-analysis"],
-        consumes: &["octad-storage", "workflow"],
-        description: "Neurosymbolic CI/CD intelligence (15 rule modules)",
-    },
-];
+/// Port assignments are authoritative. If any other file disagrees, it is that
+/// file which is wrong (and the registry-consistency test should have caught it).
+pub static REGISTRY: LazyLock<&'static [ServiceEntry]> =
+    LazyLock::new(|| REGISTRY_FILE.services.as_slice());
 
 /// All valid capability type wire names per the Groove schema.
-pub const CAPABILITY_TYPES: &[&str] = &[
-    "voice",
-    "text",
-    "presence",
-    "spatial-audio",
-    "recording",
-    "tts",
-    "stt",
-    "integrity",
-    "feed-verification",
-    "hash-chain",
-    "attestation",
-    "octad-storage",
-    "drift-detection",
-    "temporal-versioning",
-    "scanning",
-    "static-analysis",
-    "panel-ui",
-    "bot-orchestration",
-    "workflow",
-    "dns-verify",
-    "config-orchestration",
-    "theorem-proving",
-    // v1.1 additions from dogfooding audit
-    "bug-reporting",
-    "dogfood-feedback",
-    "cve-analysis",
-    "proof-exchange",
-    "neural-dispatch",
-    "custom",
-];
+pub static CAPABILITY_TYPES: LazyLock<&'static [String]> =
+    LazyLock::new(|| REGISTRY_FILE.capability_types.as_slice());
 
 /// Valid wire protocol types.
-pub const PROTOCOL_TYPES: &[&str] = &[
-    "webrtc",
-    "websocket",
-    "http",
-    "grpc",
-    "nntps",
-    "cli",  // v1.1: passive-mode services
-    "mcp",  // v1.1: BoJ MCP invocation
-    "custom",
-];
+pub static PROTOCOL_TYPES: LazyLock<&'static [String]> =
+    LazyLock::new(|| REGISTRY_FILE.protocol_types.as_slice());
+
+/// Inclusive port bands that discovery sweeps in addition to registry ports.
+pub fn probe_bands() -> &'static [(u16, u16)] {
+    REGISTRY_FILE.probe_bands.as_slice()
+}
+
+/// Ports worth probing: every probeable registry assignment.
+pub fn probe_ports() -> Vec<u16> {
+    REGISTRY
+        .iter()
+        .filter(|e| e.is_probeable())
+        .map(|e| e.port)
+        .collect()
+}
 
 /// Print the canonical registry table.
 pub fn print_registry() {
     println!("{}", "Groove Service Registry (canonical)".bold());
-    println!("{}", "=".repeat(80));
+    println!("{}", "=".repeat(96));
     println!(
-        "{:<18} {:>5}  {:<40}  {}",
+        "{:<14} {:>5}  {:<10}  {:<34}  {}",
         "SERVICE".bold(),
         "PORT".bold(),
+        "STATUS".bold(),
         "OFFERS".bold(),
         "CONSUMES".bold()
     );
-    println!("{}", "-".repeat(80));
+    println!("{}", "-".repeat(96));
 
-    for entry in REGISTRY {
+    for entry in REGISTRY.iter() {
         let offers = entry.offers.join(", ");
         let consumes = entry.consumes.join(", ");
-        let port_str = if entry.port == 8080 && entry.id == "gitbot-fleet" {
-            format!("{}", entry.port).yellow().to_string()
-        } else {
-            format!("{}", entry.port)
+        let status = match entry.status.as_str() {
+            "rejected-proposal" => entry.status.yellow().to_string(),
+            "reference" => entry.status.green().to_string(),
+            other => other.to_string(),
         };
-        println!("{:<18} {:>5}  {:<40}  {}", entry.id, port_str, offers, consumes);
+        println!(
+            "{:<14} {:>5}  {:<10}  {:<34}  {}",
+            entry.id, entry.port, status, offers, consumes
+        );
     }
 
-    println!("{}", "-".repeat(80));
+    println!("{}", "-".repeat(96));
     println!(
-        "{} registered services, {} capability types",
+        "{} registered services, {} capability types; probe bands: {}",
         REGISTRY.len(),
-        CAPABILITY_TYPES.len()
+        CAPABILITY_TYPES.len(),
+        probe_bands()
+            .iter()
+            .map(|(lo, hi)| format!("{lo}-{hi}"))
+            .collect::<Vec<_>>()
+            .join(", ")
     );
-    println!();
     println!(
         "{}",
-        "NOTE: gitbot-fleet (8080) collides with verisimdb (8080) — pending resolution"
-            .yellow()
+        "source: registry/groove-registry.json (embedded at build time)".dimmed()
     );
 }
 
@@ -214,12 +153,12 @@ pub fn find_by_port(port: u16) -> Vec<&'static ServiceEntry> {
 
 /// Check if a capability type wire name is valid.
 pub fn is_valid_capability(cap: &str) -> bool {
-    CAPABILITY_TYPES.contains(&cap)
+    CAPABILITY_TYPES.iter().any(|c| c == cap)
 }
 
 /// Check if a protocol type is valid.
 pub fn is_valid_protocol(proto: &str) -> bool {
-    PROTOCOL_TYPES.contains(&proto)
+    PROTOCOL_TYPES.iter().any(|p| p == proto)
 }
 
 /// Result of a compatibility check between two services.
@@ -238,38 +177,24 @@ pub struct CapMatch {
     pub capability: String,
 }
 
-/// Check if two services can compose via Groove.
+/// Check if two capability sets can compose via Groove.
 ///
 /// Composition requires bidirectional capability satisfaction:
 /// A.consumes ⊆ B.offers AND B.consumes ⊆ A.offers
 ///
 /// Partial composition (one direction only) is reported as incompatible
 /// with an explanatory reason.
-pub fn check_compat(a_id: &str, b_id: &str) -> Result<CompatResult> {
-    let a = find_service(a_id);
-    let b = find_service(b_id);
-
-    if a.is_none() {
-        bail!("Service '{}' not found in registry. Use a registered service_id or implement file-based loading.", a_id);
-    }
-
-    if b.is_none() {
-        bail!("Service '{}' not found in registry. Use a registered service_id.", b_id);
-    }
-
-    let a = a.unwrap();
-    let b = b.unwrap();
-
+pub fn check_compat_entries(a: &ServiceEntry, b: &ServiceEntry) -> CompatResult {
     let mut matched = Vec::new();
     let mut reasons = Vec::new();
 
     // Check A.consumes ⊆ B.offers
-    for cap in a.consumes {
+    for cap in &a.consumes {
         if b.offers.contains(cap) {
             matched.push(CapMatch {
-                provider: b.id.to_string(),
-                consumer: a.id.to_string(),
-                capability: cap.to_string(),
+                provider: b.id.clone(),
+                consumer: a.id.clone(),
+                capability: cap.clone(),
             });
         } else {
             reasons.push(format!(
@@ -280,12 +205,12 @@ pub fn check_compat(a_id: &str, b_id: &str) -> Result<CompatResult> {
     }
 
     // Check B.consumes ⊆ A.offers
-    for cap in b.consumes {
+    for cap in &b.consumes {
         if a.offers.contains(cap) {
             matched.push(CapMatch {
-                provider: a.id.to_string(),
-                consumer: b.id.to_string(),
-                capability: cap.to_string(),
+                provider: a.id.clone(),
+                consumer: b.id.clone(),
+                capability: cap.clone(),
             });
         } else {
             reasons.push(format!(
@@ -295,10 +220,23 @@ pub fn check_compat(a_id: &str, b_id: &str) -> Result<CompatResult> {
         }
     }
 
-    Ok(CompatResult {
+    CompatResult {
         compatible: reasons.is_empty(),
         matched,
         reasons,
-    })
+    }
 }
 
+/// Check if two registered services can compose via Groove.
+pub fn check_compat(a_id: &str, b_id: &str) -> Result<CompatResult> {
+    let Some(a) = find_service(a_id) else {
+        bail!(
+            "Service '{}' not found in registry. Use a registered service_id or implement file-based loading.",
+            a_id
+        );
+    };
+    let Some(b) = find_service(b_id) else {
+        bail!("Service '{}' not found in registry. Use a registered service_id.", b_id);
+    };
+    Ok(check_compat_entries(a, b))
+}

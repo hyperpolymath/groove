@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0001: groove-protocol is the canonical home of the Groove protocol
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+The protocol was defined twice: `groove-protocol` (2026-03, v0.1.0 — full spec,
+working Rust CLI, Zig GRV6 reference, JS harness, papers) and `groove` (2026-06,
+"v0.3-draft" — an RSR-template repo whose real content was a 119-line cleave-layered
+spec sketch, a proposed port manifest, and 783 lines of relocated, non-compiling
+Idris2 proofs). Neither referenced the other; they contradicted each other on
+transport, lifecycle, and versioning.
+
+== Decision
+
+`groove-protocol` is canonical. The `groove` repo's real content moved here:
+
+* spec sketch → `spec/LAYERING.adoc` (aspirational annex, ADR 0003)
+* proofs → `proofs/` (honest status README, task PROOFS-1)
+* S-expr manifest → `docs/archive/groove-sexpr-manifest.a2ml` (ADR 0002)
+
+`groove` is reduced to a pointer README.
+
+== Owner console actions (cannot be done from a clone)
+
+* Archive `hyperpolymath/groove` on GitHub after merging its pointer PR.
+* Optional, cheap way to get the better name: after archiving the old repo
+  (or renaming it e.g. `groove-design-attic`), rename `groove-protocol` → `groove`.
+  GitHub preserves redirects. Everything in this repo is name-agnostic.
+
+== Consequences
+
+One spec, one implementation lineage, one issue tracker. The cleave-layering idea
+survives as an annex instead of a competing spec.

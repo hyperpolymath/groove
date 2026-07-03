@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Repository Layout Standard (ADR 0008)
+
+The rule: *everything at the top level justifies itself or dies.* Git history
+is the undo button; deletions are safe.
+
+== Canonical top level
+
+[cols="1,3"]
+|===
+| `README` | What it is, honest status, map of the tree
+| `LICENSE`, `LICENSES/` | MPL-2.0 code, CC-BY-SA-4.0 prose (ADR 0004)
+| `CHANGELOG.md` | Real releases, not template residue
+| `docs/` | Design docs, `decisions/` (ADRs), `archive/` (provenance)
+| `spec/` | Spec repos only
+| code dirs | `cli/`, `provider/`, `clients/`, `reference/`, or `src/` — as few as the artifacts demand
+| `registry/` | Machine-readable single sources of truth (ADR 0006)
+| `tests/`, `examples/` | Real tests; runnable examples
+| `.github/workflows/` | *≤5 workflows, each exercising a real artifact* — a workflow that cannot fail for a substantive reason is deleted
+| AI manifest | *At most one*, at the root, if used at all
+|===
+
+== What died and must not return
+
+Per-directory AI-manifest files (~127/repo at peak), `.machine_readable/`
+contractile trees, `machine-readable-design/`, `coordination.k9`, `session/`
+dispatch bindings, `docs-template/`, empty scaffold trees (`docs/theory`,
+`docs/whitepapers`, `features/*`), wrong-stack build files, and 25-workflow
+CI stacks for repos with no code. Governance-to-substance ratio is a review
+criterion: if the meta outweighs the content, prune the meta.
+
+== Community-health files
+
+`GOVERNANCE` / `CONTRIBUTING` / `SECURITY` / `CODE_OF_CONDUCT` belong *once*
+in an org-level `.github` repository (GitHub applies them to every repo
+without one). Per-repo, keep at most a minimal `SECURITY.md` contact.
+
+== The one template-era keeper
+
+The `PROOF-NEEDS` honest-truth-ledger pattern (see the cleave repo): one file
+stating obligations, gaps, and the explicit bar between "feasible" and
+"demonstrated". One honest ledger beats a hundred generated manifests.

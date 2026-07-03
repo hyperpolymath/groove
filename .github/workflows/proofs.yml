@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MPL-2.0
+# Idris2 proof typecheck — permanently allow-fail until PROOFS-1 (decoupling
+# the relocated gossamer modules) is done; see proofs/README.adoc. This job is
+# where the Gossamer.ABI.* -> Groove.* rename gets verified; do not rename
+# without it.
+name: proofs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1" # weekly, Monday morning
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: idris2 typecheck (allow-fail until PROOFS-1)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: install idris2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y idris2 || {
+            echo "apt idris2 unavailable — trying pack bootstrap is out of scope; failing soft"
+            exit 1
+          }
+      - name: typecheck proofs
+        run: |
+          set -euo pipefail
+          cd proofs
+          for f in *.idr; do
+            echo "== $f"
+            idris2 --check "$f"
+          done

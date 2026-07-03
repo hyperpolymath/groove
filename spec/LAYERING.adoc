@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= Groove Layering on Cleave (Aspirational Annex)
+:doctype: book
+:revnumber: annex-1
+:revdate: 2026-07-02
+:toc: macro
+:toclevels: 3
+:sectnums:
+
+[IMPORTANT]
+====
+*STATUS: ASPIRATIONAL ANNEX — NOT NORMATIVE.*
+
+This annex describes a possible future layering of Groove on the *Cleave
+interface engine* (the transmutable dial) and a *weft* wire layer (Bebop
+control plane / WebRTC media plane). Neither cleave nor weft has an
+implementation today; nothing in this annex is normative for Groove v0.x.
+The normative protocol is defined by `SPEC.adoc` and `TRANSPORT.adoc`.
+
+It is preserved here so the Soft/Hard dial framing — the most valuable idea
+from the 2026-06 design line (formerly the `groove` repo, now archived) — is
+not lost. If cleave reaches its demonstrable kernel
+(see the cleave repo's `docs/KERNEL.adoc`), this annex is the starting point
+for a Groove v2 layering discussion.
+====
+
+[abstract]
+Groove is a capability-based protocol for service discovery and inter-component
+communication. This annex sketches Groove *layered on the Cleave interface
+engine*. Cross-references: the lifecycle/residue discipline lives in the cleave
+repo (`docs/standards/RANKED-OWNERSHIP-CLEAVE.adoc`); the wire layer is weft
+(not yet built).
+
+toc::[]
+
+== Position in the stack
+
+[%hardbreaks]
+*cleave* — the interface engine (the transmutable dial, WF/OF staircase, linear
+handles, self-dual zero-residue teardown). *This layering depends on it.*
+*weft* — the data-form / wire layer (Bebop control plane, WebRTC media plane).
+*groove* — THIS protocol: discovery + typed negotiation + Soft/Hard modes.
+*consumers* — gossamer, panll, burble import groove; they do not define it.
+
+== Soft and Hard are dial positions, not separate protocols
+
+The single most important correction from the drifted prose: Soft and Hard groove are
+**positions on the cleave dial**, not two unrelated integration styles.
+
+[cols="1,2,2",options="header"]
+|===
+| | Soft Groove | Hard Groove
+| Coupling | loose: pub/sub, events, drop-in | tight: in-process, docked
+| Cleave dial | sparse *order-respecting subset* of the staircase | deep descent (near `perp`) = total interface
+| Lease (cleave RC-6) | *Soft-expires* -> zero-residue wipe | *Hard-refreshes* on heartbeat/activity
+| Negotiation | capability subset, session-scoped | full capability set, persistent
+| Use | optional components | core components
+|===
+
+A consumer that "upgrades" from Soft to Hard is *dialing the same surface down the
+staircase*, not switching to a different transport.
+
+== Discovery
+
+`GET /.well-known/groove` returns a **typed, signable** capability manifest.
+
+NOTE: The legacy prose returned opaque JSON over HTTP/1.0-per-call (`Connection: close`
+each message, no framing/multiplex), degrading every value to an untyped scalar through
+a hand-rolled parser. In this layering the manifest is typed and signable
+(closing cleave PROOF-NEEDS G-5 / O-8: capability spoofing). See SPEC.adoc §Manifest
+for the current normative manifest encodings.
+
+== Negotiation (admissibility)
+
+Admissibility = *offered superset-of required* (`IsSubset offered required`), proved
+once at handshake. This is the *B1* layer of the cleave surface (can-we-cleave);
+groove performs it, the cleave engine carries the resulting lifecycle witness at B2.
+
+== Capability manifest (typed)
+
+The historical reference shape is preserved at
+`docs/archive/groove-sexpr-manifest.a2ml` (S-expression dialect, superseded by the
+encodings in SPEC.adoc). On the wire it is a typed structure (not free JSON),
+carrying at least:
+
+[%hardbreaks]
+* `service` identity + `service-version`
+* `port` (broker/discovery; the 4070 broker-port proposal was recorded and rejected —
+  see `registry/groove-registry.json`)
+* `capabilities` — id / name / description / methods / optional tier
+* `dependencies` — service + version + rationale
+* a *signature* over the manifest (authenticity)
+
+== Transport planes (delegated to weft)
+
+The B perp C decoupling (membrane contract independent of wire format) means this
+layering specifies *which typed planes* groove carries, not the bytes:
+
+[cols="1,3",options="header"]
+|===
+| Plane | Transport
+| Control | **Bebop** — typed, binary, reliable/ordered. Gives the logical schema (C1) a real typed encoding. (burble already speaks Bebop.)
+| Media | **WebRTC / RTP** — lossy/low-latency, no head-of-line block. (burble already speaks WebRTC.)
+|===
+
+Do NOT invent a wire format here; align to what consumers already speak. This is also
+why weft (data-form) is a thin alignment layer, not a new serialiser — see the
+protocol-squisher caution.
+
+== Security
+
+* Capability-based authorization: services declare required capabilities; clients must
+  possess them.
+* Manifest signing (above) for authenticity.
+* Posture is *indexed by groove mode* via the cleave engine's emerging transmute-mode
+  security layer (cleave repo, `docs/architecture/TRANSMUTE-SECURITY.adoc`): Soft is
+  more preemptable and more gated; Hard is more permissioned and honours a preemption
+  notice.
+
+== Lifecycle / residue
+
+In this layering, lifecycle is delegated to cleave. A groove session is a cleave
+surface: connect mints, disconnect linearly consumes, graceful teardown reaches
+`perp` = zero residue (RC-1..13). Rupture (kill/drop) is survivor-owns-the-wipe.
+(In the *normative* v0.x protocol, the lifecycle is the self-contained state machine
+of SPEC.adoc §4 — this delegation only applies if/when the cleave layering lands.)
+
+== What this annex deliberately omits
+
+* The dial/staircase mechanism itself — that is cleave.
+* The byte encoding — that is weft + Bebop/WebRTC.
+* Non-graceful teardown — survivor-owns-the-wipe (cleave RC-10/RC-13).
+
+== Provenance
+
+Rehomed and rewritten 2026-06-16 from `panll/docs/standards/groove/protocol/
+GROOVE-PROTOCOL.adoc` (left untouched there per panll no-touch rule) and from the
+groove semantics that had drifted into gossamer. Moved into this repo as an
+aspirational annex 2026-07-02 when the interim `groove` repo was consolidated into
+`groove-protocol` (ADR 0001); its "0.3-draft" version number was retired (ADR 0003).

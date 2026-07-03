@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0002: Abstract manifest model, two encodings (JSON required, A2ML optional)
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+Three manifest dialects existed: the spec's A2ML `@groove-manifest` blocks
+(`application/groove+a2ml`), the JSON dialect the CLI and browser extension actually
+implement (`groove_version`, `service_id`, ...), and an S-expression A2ML dialect in
+the interim `groove` repo. No A2ML parser exists anywhere in scope — the JS harness
+"parser" was a regex stub returning empty capability lists. The only *working,
+tested* manifest code is JSON.
+
+== Decision
+
+The Groove Manifest is defined as an abstract data model (SPEC.adoc §2.1.1) with two
+concrete encodings:
+
+* `application/groove+json` — *REQUIRED*. Field set = what `groove validate`/`probe`
+  implement today. Consumers MUST accept it.
+* `application/groove+a2ml` — *OPTIONAL / target*. The `@`-block dialect from
+  `examples/*.a2ml`. Providers MAY serve it (template-rendered; serve-only);
+  consumption is deferred until an A2ML parser exists (promotion path: feature flag
+  in `groove-core`).
+
+Providers SHOULD content-negotiate on `Accept`. The S-expression dialect is retired
+(archived at `docs/archive/groove-sexpr-manifest.a2ml`).
+
+== Consequences
+
+The spec is amended to match working code *once, deliberately*; from then on code
+conforms to spec. "Typed manifest" claims must say JSON-schema-typed, not
+A2ML-typed, until a parser exists.

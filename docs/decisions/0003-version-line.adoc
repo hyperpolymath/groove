@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0003: Version line — next release is groove-protocol v0.2.0
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+`groove-protocol` was at v0.1.0 (2026-03-23). The interim `groove` repo labelled its
+119-line sketch "v0.3-draft", implying it superseded a spec it never referenced.
+
+== Decision
+
+The version line of the Groove protocol is this repo's: v0.1.0 → *v0.2.0* (the
+consolidation + dual-encoding + executable-conformance release). "0.3-draft" is
+retired; the sketch it labelled is now `spec/LAYERING.adoc`, an aspirational annex
+with no version of its own.
+
+== Consequences
+
+Version consistency is CI-checked across Cargo.toml / SPEC.adoc / README.

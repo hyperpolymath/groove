@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 0008: Hard prune of template scaffolding; minimal canonical repo layout
+:date: 2026-07-02
+:status: accepted
+
+== Context
+
+The RSR template instantiation left cleave and the interim groove repo with ~127
+per-directory AI-manifest files each, 25 CI workflows, `.machine_readable/`
+contractile trees, session-dispatch bindings, empty scaffold directory trees, and
+stale wrong-repo documents (a TEST-NEEDS file for "rsr-template-repo"; an ecosystem
+file copy-pasted from "pseudoscript"). Governance-to-substance ratio was inverted:
+hundreds of meta files around ~1,000 lines of real content.
+
+== Decision
+
+*Hard prune.* Template scaffolding is deleted, not atticked — git history is the
+undo button. The canonical top-level layout is defined in `docs/REPO-LAYOUT.adoc`;
+everything outside it justifies itself or dies. Per repo: at most one top-level
+AI-manifest, at most ~5 CI workflows, all of them exercising real artifacts.
+
+Community-health files (GOVERNANCE/CONTRIBUTING/SECURITY) should live *once* in an
+org-level `.github` repository (owner action, out of scope here); per-repo we keep
+only a minimal SECURITY.md where one existed.
+
+== Consequences
+
+Repo top levels fit on one screen. CI runs things that can actually fail for
+substantive reasons. The one template-era artifact worth keeping estate-wide is the
+PROOF-NEEDS honest-truth-ledger pattern.
