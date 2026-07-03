@@ -53,7 +53,14 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+      # Pin the zig version the reference targets. The code uses std.net
+      # (Address.parseIp6 / addr.listen / server.accept) and
+      # std.time.nanoTimestamp — both removed by zig 0.16's std.Io networking
+      # rework. Migrating reference/ipv6t to the 0.16 Io API is a tracked
+      # follow-up; until then, build against 0.14.x as authored.
       - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
       - run: zig build test
         working-directory: reference/ipv6t
 
