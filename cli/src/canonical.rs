@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn floats_are_rejected() {
-        assert!(canonical_json(&json!({"pi": 3.14})).is_err());
+        assert!(canonical_json(&json!({"ratio": 0.5})).is_err());
     }
 
     #[test]

@@ -488,6 +488,11 @@ async fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<State>>) -> R
             };
             let outcome = {
                 let mut st = state.lock().expect("state lock");
+                // Expiry is wall-clock, not sweeper-tick (SPEC §4.6): reap
+                // due leases before the lookup so an expired handle is
+                // already consumed (404), and a hard lease past three whole
+                // missed TTL windows cannot be resurrected by this refresh.
+                st.sweep_leases(Instant::now());
                 match st.handles.get_mut(&handle) {
                     None => Some((404, r#"{"error":"unknown or already-consumed handle"}"#)),
                     Some(entry) => match &mut entry.lease {
@@ -517,6 +522,11 @@ async fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<State>>) -> R
 
             let (status, body) = {
                 let mut st = state.lock().expect("state lock");
+                // Expiry IS consumption (SPEC §4.6): reap due leases first
+                // so a disconnect with an expired handle answers 410 and the
+                // zero-residue groove:lease-expired attestation is emitted
+                // rather than lost.
+                st.sweep_leases(Instant::now());
                 match st.handles.remove(&handle) {
                     Some(entry) => {
                         // Linear consumption: the handle is gone; a second

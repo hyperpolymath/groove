@@ -32,6 +32,7 @@ ok()   { pass=$((pass+1)); echo "  PASS: $1"; }
 bad()  { fail=$((fail+1)); echo "  FAIL: $1" >&2; }
 need() { command -v "$1" >/dev/null || { echo "missing dependency: $1" >&2; exit 2; }; }
 need curl
+need python3
 
 json_get() { # json_get <json> <python-expr over d>
   python3 - "$1" "$2" <<'EOF'
