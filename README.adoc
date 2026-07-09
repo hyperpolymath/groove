@@ -63,7 +63,7 @@ consumers keep working; the capability disappears gracefully.
 [cols="1,3"]
 |===
 | Stage | Working Draft
-| Version | 0.2.0
+| Version | 0.3.0 (draft: lease modes §4.6 + signed manifests §2.1.5)
 | Media Types | `application/groove+json` (required), `application/groove+a2ml` (optional; registration pending)
 | Spec | Drafted (`spec/`); conformance checklist executable (`provider/tests/`)
 | CLI | Builds and runs; tested against the reference provider
